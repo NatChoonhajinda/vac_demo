@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Patient Journey — Symptom & Medication Assessment</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Spectral:wght@500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --ink:#14343B;
+    --ink-soft:#4A5E60;
+    --teal:#0E6E7D;
+    --teal-dark:#0A5560;
+    --surface:#FFFFFF;
+    --panel:#F4F7F7;
+    --panel-2:#EDF2F2;
+    --border:#DBE5E5;
+    --border-strong:#C3D2D2;
+    --good-bg:#E3F2EA; --good-fg:#1F6B48;
+    --warn-bg:#FBF0DA; --warn-fg:#93610F;
+    --bad-bg:#FBE7E4;  --bad-fg:#A5372E;
+    --neut-bg:#EAF0F0; --neut-fg:#4A5E60;
+    --amber:#E8A33D;
+    --shadow:0 1px 2px rgba(20,52,59,.06), 0 8px 24px -12px rgba(20,52,59,.18);
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0; background:var(--panel);
+    color:var(--ink);
+    font-family:"IBM Plex Sans",system-ui,sans-serif;
+    font-size:16px; line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:760px; margin:0 auto; padding:40px 20px 140px}
+
+  /* ---- Header ---- */
+  header.page{margin-bottom:28px}
+  .eyebrow{
+    font-family:"IBM Plex Mono",monospace; font-weight:600;
+    font-size:12px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--teal);
+  }
+  h1.title{
+    font-family:"Spectral",serif; font-weight:600;
+    font-size:34px; line-height:1.12; margin:8px 0 6px; color:var(--ink);
+  }
+  .lede{color:var(--ink-soft); font-size:15px; max-width:56ch}
+
+  /* ---- Cards ---- */
+  .card{
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:14px; padding:24px 24px 22px; margin-top:18px;
+    box-shadow:var(--shadow);
+  }
+  .card.gate{padding-bottom:8px}
+  .card-head{display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:4px}
+  .card-titles{min-width:0}
+  .card-code{
+    font-family:"IBM Plex Mono",monospace; font-weight:600; font-size:12px;
+    letter-spacing:.1em; color:var(--teal); text-transform:uppercase;
+  }
+  h2.card-name{font-family:"Spectral",serif; font-weight:600; font-size:22px; margin:2px 0 2px}
+  .card-sub{color:var(--ink-soft); font-size:13.5px; margin:0}
+
+  /* ---- Section / question rows ---- */
+  .qgroup{margin-top:18px}
+  .qgroup + .qgroup{border-top:1px solid var(--border); padding-top:16px}
+  .qlabel{font-weight:600; font-size:14.5px; margin:0 0 3px}
+  .qhint{color:var(--ink-soft); font-size:12.5px; margin:0 0 10px}
+
+  /* ---- Segmented (radio) ---- */
+  .seg{display:flex; flex-wrap:wrap; gap:6px}
+  .seg.grow > label{flex:1 1 0}
+  .seg input{position:absolute; opacity:0; width:1px; height:1px}
+  .seg label{
+    cursor:pointer; user-select:none; text-align:center;
+    border:1px solid var(--border-strong); background:#fff;
+    border-radius:9px; padding:8px 10px; min-width:52px;
+    transition:background .15s, border-color .15s, color .15s;
+  }
+  .seg label .num{display:block; font-family:"IBM Plex Mono",monospace; font-weight:600; font-size:15px}
+  .seg label .cap{display:block; font-size:11px; color:var(--ink-soft); margin-top:1px; line-height:1.2}
+  .seg label:hover{border-color:var(--teal)}
+  .seg input:checked + label{
+    background:var(--teal); border-color:var(--teal); color:#fff;
+  }
+  .seg input:checked + label .cap{color:#DCEDEE}
+  .seg input:focus-visible + label{outline:2px solid var(--teal); outline-offset:2px}
+
+  /* Yes/No gate */
+  .seg.yesno label{min-width:74px; font-weight:600}
+
+  /* ---- Sliders ---- */
+  .slider-row{display:flex; align-items:center; gap:16px}
+  input[type=range]{
+    -webkit-appearance:none; appearance:none; flex:1;
+    height:6px; border-radius:999px; background:var(--panel-2);
+    outline-offset:4px;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; width:22px; height:22px; border-radius:50%;
+    background:var(--teal); border:3px solid #fff; box-shadow:0 1px 4px rgba(14,110,125,.5); cursor:pointer;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:22px; height:22px; border-radius:50%;
+    background:var(--teal); border:3px solid #fff; box-shadow:0 1px 4px rgba(14,110,125,.5); cursor:pointer;
+  }
+  .slider-val{
+    font-family:"IBM Plex Mono",monospace; font-weight:600; font-size:16px;
+    min-width:60px; text-align:right; color:var(--ink);
+  }
+  .scale-ticks{display:flex; justify-content:space-between; font-size:11px; color:var(--ink-soft); margin-top:4px; font-family:"IBM Plex Mono",monospace}
+  .num-field{display:flex; align-items:center; gap:4px; min-width:96px; justify-content:flex-end}
+  .num-field input{
+    width:66px; font-family:"IBM Plex Mono",monospace; font-weight:600; font-size:16px;
+    text-align:right; color:var(--ink); background:#fff;
+    border:1px solid var(--border-strong); border-radius:8px; padding:6px 8px;
+  }
+  .num-field input:focus-visible{outline:2px solid var(--teal); outline-offset:1px; border-color:var(--teal)}
+  .num-field input:invalid{border-color:var(--bad-fg)}
+  .num-field .unit{font-family:"IBM Plex Mono",monospace; font-weight:600; font-size:14px; color:var(--ink-soft)}
+
+  /* ---- Instrument item rows (area / intensity / subjective) ---- */
+  .irow{display:flex; align-items:center; gap:12px; margin-bottom:10px; flex-wrap:wrap}
+  .irow .iname{flex:1 1 160px; font-size:13.5px; font-weight:500; display:flex; align-items:baseline; gap:6px}
+  .irow .bsa{
+    font-family:"IBM Plex Mono",monospace; font-weight:600; font-size:11px;
+    color:var(--teal); background:var(--panel); border-radius:5px; padding:1px 6px; white-space:nowrap;
+  }
+  .irow .seg{flex:2 1 260px}
+  .seg.dense{gap:4px}
+  .seg.dense label{padding:7px 2px; min-width:0}
+  .seg.dense label .num{font-size:13px}
+
+  .subtotal{
+    display:flex; align-items:baseline; gap:8px; margin-top:12px;
+    font-size:12px; letter-spacing:.06em; text-transform:uppercase;
+    color:var(--ink-soft); font-weight:600;
+  }
+  .subtotal b{font-family:"IBM Plex Mono",monospace; font-size:17px; color:var(--ink); margin-left:auto}
+  .subtotal .max{font-family:"IBM Plex Mono",monospace; font-size:12px; text-transform:none; letter-spacing:0}
+
+  /* ---- Checkboxes (dMS) ---- */
+  .checks{display:flex; flex-direction:column; gap:8px; margin-top:12px}
+  .check{
+    display:flex; align-items:center; gap:12px; cursor:pointer;
+    border:1px solid var(--border-strong); border-radius:10px; padding:12px 14px;
+    transition:border-color .15s, background .15s;
+  }
+  .check:hover{border-color:var(--teal)}
+  .check input{width:20px; height:20px; accent-color:var(--teal); cursor:pointer; flex:none}
+  .check .ctext{flex:1; font-size:14.5px}
+  .check .pts{
+    font-family:"IBM Plex Mono",monospace; font-weight:600; font-size:12.5px;
+    color:var(--teal); background:var(--panel); border-radius:6px; padding:2px 8px;
+  }
+  .check:has(input:checked){border-color:var(--teal); background:#F3F9F9}
+
+  /* ---- Score readout ---- */
+  .readout{
+    display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+    margin-top:20px; padding:14px 16px; background:var(--panel); border-radius:11px;
+  }
+  .readout .big{font-family:"IBM Plex Mono",monospace; font-weight:600; font-size:26px; line-height:1; color:var(--ink)}
+  .readout .max{font-family:"IBM Plex Mono",monospace; font-size:14px; color:var(--ink-soft)}
+  .readout .lab{font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-soft); font-weight:600}
+  .chip{
+    margin-left:auto; font-size:13px; font-weight:600; padding:6px 12px; border-radius:999px;
+    background:var(--neut-bg); color:var(--neut-fg); white-space:nowrap;
+  }
+  .chip.good{background:var(--good-bg); color:var(--good-fg)}
+  .chip.warn{background:var(--warn-bg); color:var(--warn-fg)}
+  .chip.bad{background:var(--bad-bg); color:var(--bad-fg)}
+
+  /* ---- Collapsible instrument ---- */
+  .instrument[hidden]{display:none}
+  .instrument{animation:reveal .28s ease}
+  @keyframes reveal{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none}}
+
+  .note{
+    font-size:12.5px; color:var(--ink-soft); margin-top:14px;
+    border-left:2px solid var(--border-strong); padding-left:12px;
+  }
+
+  /* ---- Summary bar ---- */
+  .summary{
+    position:fixed; left:0; right:0; bottom:0; z-index:20;
+    background:rgba(255,255,255,.92); backdrop-filter:blur(8px);
+    border-top:1px solid var(--border); box-shadow:0 -6px 24px -18px rgba(20,52,59,.5);
+  }
+  .summary-inner{max-width:760px; margin:0 auto; padding:12px 20px; display:flex; align-items:center; gap:14px; flex-wrap:wrap}
+  .summary-lab{font-family:"IBM Plex Mono",monospace; font-weight:600; font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-soft)}
+  .pill{
+    display:inline-flex; align-items:baseline; gap:6px; font-size:13px;
+    background:var(--panel); border:1px solid var(--border); border-radius:999px; padding:5px 11px;
+  }
+  .pill b{font-family:"IBM Plex Mono",monospace}
+  .pill .dot{width:8px; height:8px; border-radius:50%; align-self:center; background:var(--neut-fg)}
+  .pill.good .dot{background:var(--good-fg)} .pill.warn .dot{background:var(--warn-fg)} .pill.bad .dot{background:var(--bad-fg)}
+  .summary-empty{font-size:13px; color:var(--ink-soft)}
+  .btn{
+    margin-left:auto; font:inherit; font-weight:600; font-size:14px; cursor:pointer;
+    background:var(--teal); color:#fff; border:none; border-radius:10px; padding:10px 18px;
+    transition:background .15s;
+  }
+  .btn:hover{background:var(--teal-dark)}
+
+  @media (max-width:560px){
+    h1.title{font-size:27px}
+    .seg.grow{gap:5px}
+    .seg label{min-width:0; padding:8px 6px}
+    .readout .chip{margin-left:0}
+    .btn{margin-left:0; width:100%}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{animation:none !important; transition:none !important}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="page">
+    <div class="eyebrow">Patient Journey</div>
+    <h1 class="title">Symptom and Medication</h1>
+    <p class="lede">Answer the screening questions below. Each assessment appears only when it applies, and its score updates as you go.</p>
+  </header>
+
+  <!-- ============ SCREENING GATES ============ -->
+  <section class="card gate" aria-labelledby="screen-h">
+    <div class="card-head">
+      <div class="card-titles">
+        <div class="card-code">Step 1 · Screening</div>
+        <h2 class="card-name" id="screen-h">Which symptoms are present?</h2>
+      </div>
+    </div>
+
+    <div class="qgroup" style="margin-top:14px">
+      <p class="qlabel">Is there Atopic Dermatitis (AD) Symptom?</p>
+      <div class="seg yesno" data-gate="scorad">
+        <input type="radio" name="g-scorad" id="g-scorad-y" value="yes"><label for="g-scorad-y">Yes</label>
+        <input type="radio" name="g-scorad" id="g-scorad-n" value="no" checked><label for="g-scorad-n">No</label>
+      </div>
+    </div>
+
+    <div class="qgroup">
+      <p class="qlabel">Is there Allergic Rhinitis (AR) Symptom?</p>
+      <div class="seg yesno" data-gate="vas">
+        <input type="radio" name="g-vas" id="g-vas-y" value="yes"><label for="g-vas-y">Yes</label>
+        <input type="radio" name="g-vas" id="g-vas-n" value="no" checked><label for="g-vas-n">No</label>
+      </div>
+    </div>
+
+    <div class="qgroup">
+      <p class="qlabel">Is there Asthmatic Symptom?</p>
+      <div class="seg yesno" data-gate="act">
+        <input type="radio" name="g-act" id="g-act-y" value="yes"><label for="g-act-y">Yes</label>
+        <input type="radio" name="g-act" id="g-act-n" value="no" checked><label for="g-act-n">No</label>
+      </div>
+    </div>
+
+    <div class="qgroup" style="padding-bottom:16px">
+      <p class="qlabel">Is the patient on Medication?</p>
+      <div class="seg yesno" data-gate="dms">
+        <input type="radio" name="g-dms" id="g-dms-y" value="yes"><label for="g-dms-y">Yes</label>
+        <input type="radio" name="g-dms" id="g-dms-n" value="no" checked><label for="g-dms-n">No</label>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SCORAD ============ -->
+  <section class="card instrument" id="inst-scorad" hidden aria-labelledby="scorad-h">
+    <div class="card-head">
+      <div class="card-titles">
+        <div class="card-code">SCORAD</div>
+        <h2 class="card-name" id="scorad-h">SCORing Atopic Dermatitis</h2>
+        <p class="card-sub">A clinical tool for assessing the severity (extent, intensity) of atopic dermatitis as objectively as possible. Total score ranges from 0 to 103.</p>
+      </div>
+    </div>
+
+    <div class="qgroup">
+      <p class="qlabel">A — Area (20% of the score)</p>
+      <p class="qhint">For each body region, select how much of that region is affected by eczema. Each region is weighted by its share of body surface area (BSA).</p>
+      <div id="sc-A-areas"></div>
+      <div class="subtotal"><span>A (extent)</span><b id="sc-A-val">—</b><span class="max">/ 100</span></div>
+    </div>
+
+    <div class="qgroup">
+      <p class="qlabel">B — Intensity (60% of the score)</p>
+      <p class="qhint">A representative area of eczema is selected. In this area, the intensity of each of the following signs is assessed as none (0), mild (1), moderate (2) or severe (3).</p>
+      <div id="sc-B-signs"></div>
+      <div class="subtotal"><span>B (intensity)</span><b id="sc-B-val">—</b><span class="max">/ 18</span></div>
+    </div>
+
+    <div class="qgroup">
+      <p class="qlabel">C — Subjective symptoms (20% of the score)</p>
+      <p class="qhint">Using a visual analogue scale where 0 is no itch (or no sleeplessness) and 10 is the worst imaginable itch (or sleeplessness).</p>
+      <div id="sc-C-items"></div>
+      <div class="subtotal"><span>C (subjective)</span><b id="sc-C-val">—</b><span class="max">/ 20</span></div>
+    </div>
+
+    <div class="readout">
+      <div><span class="lab">SCORAD</span><br><span class="big" id="sc-score">—</span><span class="max"> / 103</span></div>
+      <span class="chip" id="sc-chip">Not complete</span>
+    </div>
+    <p class="note">SCORAD = A/5 + 7B/2 + C, where A = (head + upper limbs L + upper limbs R)×0.09 + (lower limbs L + lower limbs R + back + anterior trunk)×0.18 + genitals×0.01. All 16 items must be answered before a score is reported. Severity bands are the common reference cutoffs (mild &lt; 25, moderate 25–50, severe &gt; 50).</p>
+  </section>
+
+  <!-- ============ VAS ============ -->
+  <section class="card instrument" id="inst-vas" hidden aria-labelledby="vas-h">
+    <div class="card-head">
+      <div class="card-titles">
+        <div class="card-code">VAS</div>
+        <h2 class="card-name" id="vas-h">Nasal Symptom Visual Analogue Scale</h2>
+        <p class="card-sub">Input — The total score ranges from 0 to 10</p>
+      </div>
+    </div>
+
+    <div class="qgroup">
+      <p class="qlabel">Overall nasal symptom severity (global assessment)</p>
+      <p class="qhint">A VAS may be used to evaluate: overall nasal symptom severity (global assessment), nasal obstruction (congestion), rhinorrhea (runny nose), sneezing, nasal itching, overall impact of allergic rhinitis on daily life.</p>
+      <div class="slider-row">
+        <input type="range" min="0" max="10" step="0.1" value="0" id="vas-slider" data-vas aria-label="VAS slider">
+        <div class="num-field"><input type="number" min="0" max="10" step="0.1" value="0" id="vas-num" data-vas aria-label="VAS value"></div>
+      </div>
+      <div class="scale-ticks"><span>0</span><span>5</span><span>10</span></div>
+    </div>
+
+    <div class="readout">
+      <div><span class="lab">VAS</span><br><span class="big" id="vas-score">0.0</span><span class="max"> / 10</span></div>
+      <span class="chip" id="vas-chip">Mild</span>
+    </div>
+    <p class="note">0 – 3: Mild symptom burden / well-controlled · &gt;3 – 7: Moderate symptom burden / partially controlled · &gt;7 – 10: Severe symptom burden / uncontrolled.</p>
+  </section>
+
+  <!-- ============ ACT ============ -->
+  <section class="card instrument" id="inst-act" hidden aria-labelledby="act-h">
+    <div class="card-head">
+      <div class="card-titles">
+        <div class="card-code">ACT · Ages 12+</div>
+        <h2 class="card-name" id="act-h">The Asthma Control Test</h2>
+        <p class="card-sub">5 Questions, scoring 1-5 for each question, total of 5-25 score</p>
+      </div>
+    </div>
+    <div id="act-questions"></div>
+
+    <div class="readout">
+      <div><span class="lab">ACT</span><br><span class="big" id="act-score">—</span><span class="max"> / 25</span></div>
+      <span class="chip" id="act-chip">Incomplete</span>
+    </div>
+    <p class="note">Score Breakdown — 20 to 25: Your asthma is generally well controlled. 16 to 19: Your asthma may not be fully controlled. 15 or lower: Your asthma is poorly controlled.</p>
+  </section>
+
+  <!-- ============ dMS ============ -->
+  <section class="card instrument" id="inst-dms" hidden aria-labelledby="dms-h">
+    <div class="card-head">
+      <div class="card-titles">
+        <div class="card-code">dMS</div>
+        <h2 class="card-name" id="dms-h">Additive Daily Medication Score</h2>
+        <p class="card-sub">Selection — The total score ranges from 0 to 6</p>
+      </div>
+    </div>
+
+    <div class="checks" id="dms-checks"></div>
+
+    <div class="readout">
+      <div><span class="lab">dMS</span><br><span class="big" id="dms-score">0</span><span class="max"> / 6</span></div>
+      <span class="chip" id="dms-chip">No medication</span>
+    </div>
+    <p class="note">0 points: No medication used. Points are additive across medication classes (1 + 2 + 3 = 6). If the classes are meant to be mutually exclusive escalation tiers instead, this should be single-select 0–3 — verify with the clinical definition.</p>
+  </section>
+
+</div>
+
+<!-- ============ SUMMARY BAR ============ -->
+<div class="summary">
+  <div class="summary-inner">
+    <span class="summary-lab">Summary</span>
+    <div id="summary-pills" style="display:flex; gap:8px; flex-wrap:wrap"></div>
+    <span class="summary-empty" id="summary-empty">No assessments selected yet</span>
+    <button class="btn" id="review-btn">Review responses</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------- data ---------- */
+  // A — body regions with their BSA weight (per scorad.corti.li)
+  const SCORAD_AREAS = [
+    ["head",             "Head and neck",        0.09],
+    ["upper_limbs_left", "Upper limbs (left)",   0.09],
+    ["upper_limbs_right","Upper limbs (right)",  0.09],
+    ["lower_limbs_left", "Lower limbs (left)",   0.18],
+    ["lower_limbs_right","Lower limbs (right)",  0.18],
+    ["trunk",            "Anterior trunk",       0.18],
+    ["back",             "Back",                 0.18],
+    ["genitals",         "Genitals",             0.01]
+  ];
+  const AREA_STEPS = [0,25,50,75,100];
+
+  const SCORAD_SIGNS = [
+    ["redness","Redness"],["swelling","Swelling"],["oozing","Oozing / Crusting"],
+    ["scratch","Scratch marks"],["thickening","Skin thickening (lichenification)"],["dryness","Dryness"]
+  ];
+  const B_CAPS = ["None","Mild","Moderate","Severe"];
+
+  const SCORAD_SUBJ = [["itch","Itch"],["sleep","Sleeplessness"]];
+
+  const ACT_Q = [
+    { id:"q1", text:"In the past 4 weeks, how much of your time did your asthma keep you from getting as much done at work, school, or at home?",
+      opts:["All of the time","Most of the time","Some of the time","A little of the time","None of the time"] },
+    { id:"q2", text:"During the past 4 weeks, how often have you had shortness of breath?",
+      opts:["More than once per day","Once per day","3–6 times per week","Once or twice per week","Not at all"] },
+    { id:"q3", text:"During the past 4 weeks, how often did your asthma symptoms (wheezing, coughing, shortness of breath, chest tightness or pain) wake you up at night or earlier than usual in the morning?",
+      opts:["4 or more times per day","1 or 2 times per day","2 or 3 times per week","Once per week or less","Not at all"] },
+    { id:"q4", text:"During the past 4 weeks, how often have you used your rescue inhaler or nebulizer medication (such as albuterol)?",
+      opts:["3 or more times per day","1 or 2 times per day","2 or 3 times per week","Once a week or less","Not at all"] },
+    { id:"q5", text:"How would you rate your asthma control during the past 4 weeks?",
+      opts:["Not controlled at all","Poorly controlled","Somewhat controlled","Well controlled","Completely controlled"] }
+  ];
+
+  const DMS_ITEMS = [
+    ["antihistamine","Oral or intranasal antihistamine",1],
+    ["inasal_cs","Intranasal corticosteroid",2],
+    ["oral_cs","Oral corticosteroid",3]
+  ];
+
+  const $ = (s,r=document)=>r.querySelector(s);
+  const el=(t,c,h)=>{const n=document.createElement(t); if(c)n.className=c; if(h!=null)n.innerHTML=h; return n;};
+  const active = { scorad:false, vas:false, act:false, dms:false };
+
+  /* ---------- generic radio row builder ---------- */
+  function buildRow(wrap, group, key, label, values, caps, badge, dense){
+    const row = el("div","irow");
+    const name = el("div","iname");
+    name.append(el("span",null,label));
+    if(badge) name.append(el("span","bsa",badge));
+    const seg = el("div","seg grow"+(dense?" dense":""));
+    values.forEach((v,i)=>{
+      const id=`sc-${group}-${key}-${v}`;
+      const inp=el("input"); inp.type="radio"; inp.name=`sc-${group}-${key}`; inp.id=id;
+      inp.value=v; inp.dataset.scorad="";
+      const cap = caps ? `<span class="cap">${caps[i]}</span>` : "";
+      const lab=el("label",null,`<span class="num">${v}${group==="A"?"%":""}</span>${cap}`);
+      lab.setAttribute("for",id);
+      seg.append(inp,lab);
+    });
+    row.append(name,seg); wrap.append(row);
+  }
+
+  /* ---------- build SCORAD A (area) ---------- */
+  const aWrap = $("#sc-A-areas");
+  SCORAD_AREAS.forEach(([key,label,w])=>{
+    buildRow(aWrap,"A",key,label,AREA_STEPS,null,`${Math.round(w*100)}% BSA`,false);
+  });
+
+  /* ---------- build SCORAD B (intensity) ---------- */
+  const bWrap = $("#sc-B-signs");
+  SCORAD_SIGNS.forEach(([key,label])=>{
+    buildRow(bWrap,"B",key,label,[0,1,2,3],B_CAPS,null,false);
+  });
+
+  /* ---------- build SCORAD C (subjective) ---------- */
+  const cWrap = $("#sc-C-items");
+  SCORAD_SUBJ.forEach(([key,label])=>{
+    buildRow(cWrap,"C",key,label,[0,1,2,3,4,5,6,7,8,9,10],null,null,true);
+  });
+
+  /* ---------- build ACT ---------- */
+  const actWrap=$("#act-questions");
+  ACT_Q.forEach((q,i)=>{
+    const g=el("div","qgroup");
+    g.append(el("p","qlabel",`${i+1}. ${q.text}`));
+    const seg=el("div","seg grow");
+    q.opts.forEach((o,idx)=>{
+      const v=idx+1, id=`${q.id}-${v}`;
+      const inp=el("input"); inp.type="radio"; inp.name=q.id; inp.id=id; inp.value=v; inp.dataset.act="";
+      const lab=el("label",null,`<span class="num">${v}</span><span class="cap">${o}</span>`); lab.setAttribute("for",id);
+      seg.append(inp,lab);
+    });
+    g.append(seg); actWrap.append(g);
+  });
+
+  /* ---------- build dMS ---------- */
+  const dmsWrap=$("#dms-checks");
+  DMS_ITEMS.forEach(([key,label,pts])=>{
+    const lab=el("label","check");
+    const inp=el("input"); inp.type="checkbox"; inp.value=pts; inp.dataset.dms=""; inp.id=`dms-${key}`;
+    lab.append(inp, el("span","ctext",label), el("span","pts",`+${pts}`));
+    dmsWrap.append(lab);
+  });
+
+  /* ---------- scoring ---------- */
+  function band(chip, cls, txt){ chip.className="chip "+cls; chip.textContent=txt; }
+
+  // reads a checked radio group; returns null when unanswered
+  function pick(group,key){
+    const c=document.querySelector(`input[name="sc-${group}-${key}"]:checked`);
+    return c ? +c.value : null;
+  }
+
+  function scoreSCORAD(){
+    let answered=0;
+
+    // A — each region's percentage weighted by its BSA share (max 100)
+    let A=0;
+    SCORAD_AREAS.forEach(([key,,w])=>{
+      const v=pick("A",key);
+      if(v!==null){ A+=v*w; answered++; }
+    });
+
+    // B — six intensity signs, 0–3 each (max 18)
+    let B=0;
+    SCORAD_SIGNS.forEach(([key])=>{
+      const v=pick("B",key);
+      if(v!==null){ B+=v; answered++; }
+    });
+
+    // C — itch + sleeplessness, 0–10 each (max 20)
+    let C=0;
+    SCORAD_SUBJ.forEach(([key])=>{
+      const v=pick("C",key);
+      if(v!==null){ C+=v; answered++; }
+    });
+
+    const complete = answered===16;
+    const total = A/5 + 7*B/2 + C;
+
+    $("#sc-A-val").textContent = A.toFixed(2).replace(/\.?0+$/,"") || "0";
+    $("#sc-B-val").textContent = B;
+    $("#sc-C-val").textContent = C;
+
+    const chip=$("#sc-chip");
+    if(!complete){
+      $("#sc-score").textContent="—";
+      band(chip,"",`Not complete · ${answered}/16`);
+      return {label:"SCORAD", value:"—", cls:""};
+    }
+    $("#sc-score").textContent=total.toFixed(1);
+    const cls = total<25?"good":total<=50?"warn":"bad";
+    band(chip,cls, total<25?"Mild":total<=50?"Moderate":"Severe");
+    return {label:"SCORAD", value:total.toFixed(1), cls};
+  }
+
+  function scoreVAS(){
+    const v=+$("#vas-slider").value;
+    $("#vas-score").textContent=v.toFixed(1);
+    const chip=$("#vas-chip");
+    if(v<=3) band(chip,"good","Mild");
+    else if(v<=7) band(chip,"warn","Moderate");
+    else band(chip,"bad","Severe");
+    return {label:"VAS", value:v.toFixed(1), cls:v<=3?"good":v<=7?"warn":"bad"};
+  }
+
+  function scoreACT(){
+    let sum=0, answered=0;
+    ACT_Q.forEach(q=>{
+      const c=document.querySelector(`input[name="${q.id}"]:checked`);
+      if(c){sum+=+c.value; answered++;}
+    });
+    const chip=$("#act-chip");
+    if(answered<5){ $("#act-score").textContent="—"; band(chip,"",`${answered}/5 answered`); return {label:"ACT", value:"—", cls:""}; }
+    $("#act-score").textContent=sum;
+    if(sum>=20) band(chip,"good","Well controlled");
+    else if(sum>=16) band(chip,"warn","Not fully controlled");
+    else band(chip,"bad","Poorly controlled");
+    return {label:"ACT", value:sum, cls:sum>=20?"good":sum>=16?"warn":"bad"};
+  }
+
+  function scoreDMS(){
+    let sum=0;
+    document.querySelectorAll('input[data-dms]:checked').forEach(c=>sum+=+c.value);
+    $("#dms-score").textContent=sum;
+    const chip=$("#dms-chip");
+    if(sum===0) band(chip,"good","No medication");
+    else if(sum<=2) band(chip,"warn","Low");
+    else band(chip,"bad","High");
+    return {label:"dMS", value:sum, cls:sum===0?"good":sum<=2?"warn":"bad"};
+  }
+
+  /* ---------- summary ---------- */
+  function refreshSummary(){
+    const pills=$("#summary-pills"); pills.innerHTML="";
+    const results=[];
+    if(active.scorad) results.push(scoreSCORAD());
+    if(active.vas) results.push(scoreVAS());
+    if(active.act) results.push(scoreACT());
+    if(active.dms) results.push(scoreDMS());
+    $("#summary-empty").style.display = results.length ? "none" : "";
+    results.forEach(r=>{
+      const p=el("span","pill "+(r.cls||""), `<span class="dot"></span>${r.label} <b>${r.value}</b>`);
+      pills.append(p);
+    });
+  }
+
+  /* ---------- gates ---------- */
+  document.querySelectorAll('.seg[data-gate] input').forEach(inp=>{
+    inp.addEventListener("change", e=>{
+      const key=e.target.closest("[data-gate]").dataset.gate;
+      const on=e.target.value==="yes";
+      active[key]=on;
+      $("#inst-"+key).hidden=!on;
+      refreshSummary();
+      if(on) $("#inst-"+key).scrollIntoView({behavior:"smooth", block:"nearest"});
+    });
+  });
+
+  /* ---------- live recompute ---------- */
+  document.addEventListener("input", e=>{
+    if(e.target.matches("[data-scorad],[data-vas],[data-act],[data-dms]")) refreshSummary();
+  });
+  document.addEventListener("change", e=>{
+    if(e.target.matches("[data-scorad],[data-act],[data-dms]")) refreshSummary();
+  });
+
+  $("#review-btn").addEventListener("click", ()=>{
+    const payload={};
+    if(active.scorad) payload.SCORAD=scoreSCORAD().value;
+    if(active.vas) payload.VAS=scoreVAS().value;
+    if(active.act) payload.ACT=scoreACT().value;
+    if(active.dms) payload.dMS=scoreDMS().value;
+    alert("Computed scores (preview only — no data submitted):\n\n"+
+      (Object.keys(payload).length? JSON.stringify(payload,null,2) : "No assessments selected."));
+  });
+
+  /* ---------- two-way slider <-> number binding ---------- */
+  function linkSlider(sliderId, numId, decimals){
+    const s=document.getElementById(sliderId), n=document.getElementById(numId);
+    if(!s||!n) return;
+    const min=+s.min, max=+s.max;
+    const fmt=v=>decimals?(+v).toFixed(decimals):String(Math.round(+v));
+    // slider drag -> mirror into number
+    s.addEventListener("input", ()=>{ n.value=fmt(s.value); });
+    // typing -> clamp into slider (keeps score source in range); empty/partial left alone
+    n.addEventListener("input", ()=>{
+      if(n.value==="" || n.value==="-") return;
+      let v=parseFloat(n.value);
+      if(isNaN(v)) return;
+      v=Math.min(max, Math.max(min, v));
+      s.value=v;
+    });
+    // leaving the field -> normalise display and settle the value
+    n.addEventListener("blur", ()=>{
+      let v=parseFloat(n.value);
+      if(isNaN(v)) v=min;
+      v=Math.min(max, Math.max(min, v));
+      n.value=fmt(v); s.value=v;
+      refreshSummary();
+    });
+  }
+  linkSlider("vas-slider","vas-num",1);
+
+  refreshSummary();
+})();
+</script>
+</body>
+</html>
