@@ -185,45 +185,13 @@
     border-left:2px solid var(--border-strong); padding-left:12px;
   }
 
-  /* ---- Stepper ---- */
-  .stepper{margin:22px 0 4px}
-  .stepper ol{list-style:none; display:flex; gap:6px; margin:0; padding:0}
-  .stepper li{flex:1 1 0; min-width:0}
-  .stepper .bar{height:4px; border-radius:999px; background:var(--border); transition:background .2s}
-  .stepper li.done .bar, .stepper li.current .bar{background:var(--teal)}
-  .stepper .stext{
-    display:block; margin-top:7px; font-size:11.5px; line-height:1.25;
-    color:var(--ink-soft); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
-  }
-  .stepper li.current .stext{color:var(--teal); font-weight:600}
-  .stepper .snum{font-family:"IBM Plex Mono",monospace; font-weight:600; font-size:11px; margin-right:5px}
-
-  /* ---- Gate question (one per page) ---- */
-  .gate-q{font-family:"Spectral",serif; font-weight:600; font-size:24px; line-height:1.25; margin:6px 0 4px}
-  .gate-hint{color:var(--ink-soft); font-size:13.5px; margin:0 0 18px}
-  .seg.yesno.big{gap:10px}
-  .seg.yesno.big label{flex:1 1 0; min-width:0; padding:16px 12px; font-size:16px; border-radius:11px}
-
-  /* ---- Steps ---- */
-  .step[hidden]{display:none}
-  .step{animation:reveal .28s ease}
-
-  /* ---- Result step ---- */
-  .result-row{display:flex; align-items:center; gap:12px; flex-wrap:wrap; padding:14px 0; border-bottom:1px solid var(--border)}
-  .result-row:last-child{border-bottom:none}
-  .result-row .rname{font-weight:600; font-size:15px; flex:1 1 160px}
-  .result-row .rname small{display:block; font-weight:400; font-size:12.5px; color:var(--ink-soft)}
-  .result-row .rval{font-family:"IBM Plex Mono",monospace; font-weight:600; font-size:20px}
-  .result-row .rmax{font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--ink-soft)}
-  .empty-state{color:var(--ink-soft); font-size:14px; padding:14px 0}
-
-  /* ---- Bottom nav bar ---- */
+  /* ---- Summary bar ---- */
   .summary{
     position:fixed; left:0; right:0; bottom:0; z-index:20;
     background:rgba(255,255,255,.92); backdrop-filter:blur(8px);
     border-top:1px solid var(--border); box-shadow:0 -6px 24px -18px rgba(20,52,59,.5);
   }
-  .summary-inner{max-width:760px; margin:0 auto; padding:12px 20px; display:flex; align-items:center; gap:12px; flex-wrap:wrap}
+  .summary-inner{max-width:760px; margin:0 auto; padding:12px 20px; display:flex; align-items:center; gap:14px; flex-wrap:wrap}
   .summary-lab{font-family:"IBM Plex Mono",monospace; font-weight:600; font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-soft)}
   .pill{
     display:inline-flex; align-items:baseline; gap:6px; font-size:13px;
@@ -232,28 +200,20 @@
   .pill b{font-family:"IBM Plex Mono",monospace}
   .pill .dot{width:8px; height:8px; border-radius:50%; align-self:center; background:var(--neut-fg)}
   .pill.good .dot{background:var(--good-fg)} .pill.warn .dot{background:var(--warn-fg)} .pill.bad .dot{background:var(--bad-fg)}
-  .nav-actions{margin-left:auto; display:flex; gap:10px; align-items:center}
+  .summary-empty{font-size:13px; color:var(--ink-soft)}
   .btn{
-    font:inherit; font-weight:600; font-size:14px; cursor:pointer;
-    background:var(--teal); color:#fff; border:1px solid var(--teal); border-radius:10px; padding:10px 18px;
-    transition:background .15s, border-color .15s, color .15s;
+    margin-left:auto; font:inherit; font-weight:600; font-size:14px; cursor:pointer;
+    background:var(--teal); color:#fff; border:none; border-radius:10px; padding:10px 18px;
+    transition:background .15s;
   }
-  .btn:hover:not(:disabled){background:var(--teal-dark); border-color:var(--teal-dark)}
-  .btn:disabled{opacity:.4; cursor:not-allowed}
-  .btn.ghost{background:#fff; color:var(--teal); border-color:var(--border-strong)}
-  .btn.ghost:hover:not(:disabled){background:var(--panel); border-color:var(--teal)}
-  .btn[hidden]{display:none}
+  .btn:hover{background:var(--teal-dark)}
 
   @media (max-width:560px){
     h1.title{font-size:27px}
-    .gate-q{font-size:20px}
     .seg.grow{gap:5px}
     .seg label{min-width:0; padding:8px 6px}
     .readout .chip{margin-left:0}
-    .stepper .stext{font-size:0}
-    .stepper .snum{font-size:11px}
-    .nav-actions{margin-left:0; width:100%}
-    .nav-actions .btn{flex:1 1 0}
+    .btn{margin-left:0; width:100%}
   }
   @media (prefers-reduced-motion:reduce){
     *{animation:none !important; transition:none !important}
@@ -266,25 +226,52 @@
   <header class="page">
     <div class="eyebrow">Patient Journey</div>
     <h1 class="title">Symptom and Medication</h1>
-    <p class="lede">Four screening questions, one per page. Answer Yes and the matching assessment opens below it; answer No and you move straight on.</p>
-
-    <nav class="stepper" aria-label="Progress">
-      <ol id="stepper-list"></ol>
-    </nav>
+    <p class="lede">Answer the screening questions below. Each assessment appears only when it applies, and its score updates as you go.</p>
   </header>
 
-  <!-- ============ STEP 1 · AD / SCORAD ============ -->
-  <section class="step" id="step-scorad" data-key="scorad" hidden>
-    <div class="card">
-      <div class="card-code">Step 1 of 5 · Screening</div>
-      <p class="gate-q">Is there Atopic Dermatitis (AD) symptom?</p>
-      <p class="gate-hint">Answering Yes opens the SCORAD assessment below.</p>
-      <div class="seg yesno big" data-gate="scorad">
-        <input type="radio" name="g-scorad" id="g-scorad-y" value="yes"><label for="g-scorad-y">Yes</label>
-        <input type="radio" name="g-scorad" id="g-scorad-n" value="no"><label for="g-scorad-n">No</label>
+  <!-- ============ SCREENING GATES ============ -->
+  <section class="card gate" aria-labelledby="screen-h">
+    <div class="card-head">
+      <div class="card-titles">
+        <div class="card-code">Step 1 · Screening</div>
+        <h2 class="card-name" id="screen-h">Which symptoms are present?</h2>
       </div>
     </div>
 
+    <div class="qgroup" style="margin-top:14px">
+      <p class="qlabel">Is there Atopic Dermatitis (AD) Symptom?</p>
+      <div class="seg yesno" data-gate="scorad">
+        <input type="radio" name="g-scorad" id="g-scorad-y" value="yes"><label for="g-scorad-y">Yes</label>
+        <input type="radio" name="g-scorad" id="g-scorad-n" value="no" checked><label for="g-scorad-n">No</label>
+      </div>
+    </div>
+
+    <div class="qgroup">
+      <p class="qlabel">Is there Allergic Rhinitis (AR) Symptom?</p>
+      <div class="seg yesno" data-gate="vas">
+        <input type="radio" name="g-vas" id="g-vas-y" value="yes"><label for="g-vas-y">Yes</label>
+        <input type="radio" name="g-vas" id="g-vas-n" value="no" checked><label for="g-vas-n">No</label>
+      </div>
+    </div>
+
+    <div class="qgroup">
+      <p class="qlabel">Is there Asthmatic Symptom?</p>
+      <div class="seg yesno" data-gate="act">
+        <input type="radio" name="g-act" id="g-act-y" value="yes"><label for="g-act-y">Yes</label>
+        <input type="radio" name="g-act" id="g-act-n" value="no" checked><label for="g-act-n">No</label>
+      </div>
+    </div>
+
+    <div class="qgroup" style="padding-bottom:16px">
+      <p class="qlabel">Is the patient on Medication?</p>
+      <div class="seg yesno" data-gate="dms">
+        <input type="radio" name="g-dms" id="g-dms-y" value="yes"><label for="g-dms-y">Yes</label>
+        <input type="radio" name="g-dms" id="g-dms-n" value="no" checked><label for="g-dms-n">No</label>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SCORAD ============ -->
   <section class="card instrument" id="inst-scorad" hidden aria-labelledby="scorad-h">
     <div class="card-head">
       <div class="card-titles">
@@ -322,20 +309,7 @@
     <p class="note">SCORAD = A/5 + 7B/2 + C, where A = (head + upper limbs L + upper limbs R)×0.09 + (lower limbs L + lower limbs R + back + anterior trunk)×0.18 + genitals×0.01. All 16 items must be answered before a score is reported. Severity bands are the common reference cutoffs (mild &lt; 25, moderate 25–50, severe &gt; 50).</p>
   </section>
 
-  </section>
-
-  <!-- ============ STEP 2 · AR / VAS ============ -->
-  <section class="step" id="step-vas" data-key="vas" hidden>
-    <div class="card">
-      <div class="card-code">Step 2 of 5 · Screening</div>
-      <p class="gate-q">Is there Allergic Rhinitis (AR) symptom?</p>
-      <p class="gate-hint">Answering Yes opens the nasal symptom VAS below.</p>
-      <div class="seg yesno big" data-gate="vas">
-        <input type="radio" name="g-vas" id="g-vas-y" value="yes"><label for="g-vas-y">Yes</label>
-        <input type="radio" name="g-vas" id="g-vas-n" value="no"><label for="g-vas-n">No</label>
-      </div>
-    </div>
-
+  <!-- ============ VAS ============ -->
   <section class="card instrument" id="inst-vas" hidden aria-labelledby="vas-h">
     <div class="card-head">
       <div class="card-titles">
@@ -362,20 +336,7 @@
     <p class="note">0 – 3: Mild symptom burden / well-controlled · &gt;3 – 7: Moderate symptom burden / partially controlled · &gt;7 – 10: Severe symptom burden / uncontrolled.</p>
   </section>
 
-  </section>
-
-  <!-- ============ STEP 3 · Asthma / ACT ============ -->
-  <section class="step" id="step-act" data-key="act" hidden>
-    <div class="card">
-      <div class="card-code">Step 3 of 5 · Screening</div>
-      <p class="gate-q">Is there asthmatic symptom?</p>
-      <p class="gate-hint">Answering Yes opens the Asthma Control Test below.</p>
-      <div class="seg yesno big" data-gate="act">
-        <input type="radio" name="g-act" id="g-act-y" value="yes"><label for="g-act-y">Yes</label>
-        <input type="radio" name="g-act" id="g-act-n" value="no"><label for="g-act-n">No</label>
-      </div>
-    </div>
-
+  <!-- ============ ACT ============ -->
   <section class="card instrument" id="inst-act" hidden aria-labelledby="act-h">
     <div class="card-head">
       <div class="card-titles">
@@ -393,20 +354,7 @@
     <p class="note">Score Breakdown — 20 to 25: Your asthma is generally well controlled. 16 to 19: Your asthma may not be fully controlled. 15 or lower: Your asthma is poorly controlled.</p>
   </section>
 
-  </section>
-
-  <!-- ============ STEP 4 · Medication / dMS ============ -->
-  <section class="step" id="step-dms" data-key="dms" hidden>
-    <div class="card">
-      <div class="card-code">Step 4 of 5 · Screening</div>
-      <p class="gate-q">Is the patient on medication?</p>
-      <p class="gate-hint">Answering Yes opens the daily medication score below.</p>
-      <div class="seg yesno big" data-gate="dms">
-        <input type="radio" name="g-dms" id="g-dms-y" value="yes"><label for="g-dms-y">Yes</label>
-        <input type="radio" name="g-dms" id="g-dms-n" value="no"><label for="g-dms-n">No</label>
-      </div>
-    </div>
-
+  <!-- ============ dMS ============ -->
   <section class="card instrument" id="inst-dms" hidden aria-labelledby="dms-h">
     <div class="card-head">
       <div class="card-titles">
@@ -424,35 +372,16 @@
     </div>
     <p class="note">0 points: No medication used. Points are additive across medication classes (1 + 2 + 3 = 6). If the classes are meant to be mutually exclusive escalation tiers instead, this should be single-select 0–3 — verify with the clinical definition.</p>
   </section>
-  </section>
-
-  <!-- ============ STEP 5 · REVIEW ============ -->
-  <section class="step" id="step-result" data-key="result" hidden>
-    <div class="card">
-      <div class="card-head">
-        <div class="card-titles">
-          <div class="card-code">Step 5 of 5 · Review</div>
-          <h2 class="card-name">Assessment summary</h2>
-          <p class="card-sub">Preview only — nothing is submitted or stored.</p>
-        </div>
-      </div>
-      <div id="result-rows"></div>
-      <p class="note" id="result-note">Use Back to revisit any step; every answer is kept.</p>
-    </div>
-  </section>
 
 </div>
 
-<!-- ============ WIZARD NAV BAR ============ -->
+<!-- ============ SUMMARY BAR ============ -->
 <div class="summary">
   <div class="summary-inner">
-    <span class="summary-lab" id="nav-step-lab">Step 1 / 5</span>
+    <span class="summary-lab">Summary</span>
     <div id="summary-pills" style="display:flex; gap:8px; flex-wrap:wrap"></div>
-    <div class="nav-actions">
-      <button class="btn ghost" id="back-btn" type="button">Back</button>
-      <button class="btn" id="next-btn" type="button">Next</button>
-      <button class="btn ghost" id="restart-btn" type="button" hidden>Start over</button>
-    </div>
+    <span class="summary-empty" id="summary-empty">No assessments selected yet</span>
+    <button class="btn" id="review-btn">Review responses</button>
   </div>
 </div>
 
@@ -500,16 +429,6 @@
     ["inasal_cs","Intranasal corticosteroid",2],
     ["oral_cs","Oral corticosteroid",3]
   ];
-
-  /* ---------- step model ---------- */
-  const STEPS = [
-    {key:"scorad", short:"AD"},
-    {key:"vas",    short:"AR"},
-    {key:"act",    short:"Asthma"},
-    {key:"dms",    short:"Medication"},
-    {key:"result", short:"Review"}
-  ];
-  let current = 0;
 
   const $ = (s,r=document)=>r.querySelector(s);
   const el=(t,c,h)=>{const n=document.createElement(t); if(c)n.className=c; if(h!=null)n.innerHTML=h; return n;};
@@ -620,23 +539,22 @@
     if(!complete){
       $("#sc-score").textContent="—";
       band(chip,"",`Not complete · ${answered}/16`);
-      return {label:"SCORAD", value:"—", max:"103", cls:"", note:`${answered} of 16 items answered`, complete:false};
+      return {label:"SCORAD", value:"—", cls:""};
     }
     $("#sc-score").textContent=total.toFixed(1);
     const cls = total<25?"good":total<=50?"warn":"bad";
-    const txt = total<25?"Mild":total<=50?"Moderate":"Severe";
-    band(chip,cls,txt);
-    return {label:"SCORAD", value:total.toFixed(1), max:"103", cls, note:txt, complete:true};
+    band(chip,cls, total<25?"Mild":total<=50?"Moderate":"Severe");
+    return {label:"SCORAD", value:total.toFixed(1), cls};
   }
 
   function scoreVAS(){
     const v=+$("#vas-slider").value;
     $("#vas-score").textContent=v.toFixed(1);
     const chip=$("#vas-chip");
-    const cls = v<=3?"good":v<=7?"warn":"bad";
-    const txt = v<=3?"Mild":v<=7?"Moderate":"Severe";
-    band(chip,cls,txt);
-    return {label:"VAS", value:v.toFixed(1), max:"10", cls, note:txt, complete:true};
+    if(v<=3) band(chip,"good","Mild");
+    else if(v<=7) band(chip,"warn","Moderate");
+    else band(chip,"bad","Severe");
+    return {label:"VAS", value:v.toFixed(1), cls:v<=3?"good":v<=7?"warn":"bad"};
   }
 
   function scoreACT(){
@@ -646,15 +564,12 @@
       if(c){sum+=+c.value; answered++;}
     });
     const chip=$("#act-chip");
-    if(answered<5){
-      $("#act-score").textContent="—"; band(chip,"",`${answered}/5 answered`);
-      return {label:"ACT", value:"—", max:"25", cls:"", note:`${answered} of 5 questions answered`, complete:false};
-    }
+    if(answered<5){ $("#act-score").textContent="—"; band(chip,"",`${answered}/5 answered`); return {label:"ACT", value:"—", cls:""}; }
     $("#act-score").textContent=sum;
-    const cls = sum>=20?"good":sum>=16?"warn":"bad";
-    const txt = sum>=20?"Well controlled":sum>=16?"Not fully controlled":"Poorly controlled";
-    band(chip,cls,txt);
-    return {label:"ACT", value:sum, max:"25", cls, note:txt, complete:true};
+    if(sum>=20) band(chip,"good","Well controlled");
+    else if(sum>=16) band(chip,"warn","Not fully controlled");
+    else band(chip,"bad","Poorly controlled");
+    return {label:"ACT", value:sum, cls:sum>=20?"good":sum>=16?"warn":"bad"};
   }
 
   function scoreDMS(){
@@ -662,93 +577,26 @@
     document.querySelectorAll('input[data-dms]:checked').forEach(c=>sum+=+c.value);
     $("#dms-score").textContent=sum;
     const chip=$("#dms-chip");
-    const cls = sum===0?"good":sum<=2?"warn":"bad";
-    const txt = sum===0?"No medication":sum<=2?"Low":"High";
-    band(chip,cls,txt);
-    return {label:"dMS", value:sum, max:"6", cls, note:txt, complete:true};
+    if(sum===0) band(chip,"good","No medication");
+    else if(sum<=2) band(chip,"warn","Low");
+    else band(chip,"bad","High");
+    return {label:"dMS", value:sum, cls:sum===0?"good":sum<=2?"warn":"bad"};
   }
 
-  const SCORERS = {scorad:scoreSCORAD, vas:scoreVAS, act:scoreACT, dms:scoreDMS};
-  function results(){
-    return STEPS.filter(s=>s.key!=="result" && active[s.key]).map(s=>SCORERS[s.key]());
-  }
-
-  /* ---------- running summary in the nav bar ---------- */
+  /* ---------- summary ---------- */
   function refreshSummary(){
     const pills=$("#summary-pills"); pills.innerHTML="";
-    results().forEach(r=>{
-      pills.append(el("span","pill "+(r.cls||""), `<span class="dot"></span>${r.label} <b>${r.value}</b>`));
+    const results=[];
+    if(active.scorad) results.push(scoreSCORAD());
+    if(active.vas) results.push(scoreVAS());
+    if(active.act) results.push(scoreACT());
+    if(active.dms) results.push(scoreDMS());
+    $("#summary-empty").style.display = results.length ? "none" : "";
+    results.forEach(r=>{
+      const p=el("span","pill "+(r.cls||""), `<span class="dot"></span>${r.label} <b>${r.value}</b>`);
+      pills.append(p);
     });
-    if(!$("#step-result").hidden) renderResult();
   }
-
-  /* ---------- review page ---------- */
-  function renderResult(){
-    const wrap=$("#result-rows"); wrap.innerHTML="";
-    const rs=results();
-    if(!rs.length){
-      wrap.append(el("p","empty-state","No symptoms were reported, so nothing was scored. Use Back if you want to change an answer."));
-      $("#result-note").textContent="Use Back to revisit any step; every answer is kept.";
-      return;
-    }
-    rs.forEach(r=>{
-      const row=el("div","result-row");
-      row.append(el("div","rname",`${r.label}<small>${r.note}</small>`));
-      row.append(el("span","rval",String(r.value)));
-      row.append(el("span","rmax",`/ ${r.max}`));
-      row.append(el("span","chip "+(r.cls||""), r.complete?r.note:"Incomplete"));
-      wrap.append(row);
-    });
-    const incomplete=rs.filter(r=>!r.complete);
-    $("#result-note").textContent = incomplete.length
-      ? `${incomplete.map(r=>r.label).join(" and ")} ${incomplete.length>1?"are":"is"} not fully answered — go Back to finish, or leave as is.`
-      : "Use Back to revisit any step; every answer is kept.";
-  }
-
-  /* ---------- stepper ---------- */
-  const stepperList=$("#stepper-list");
-  STEPS.forEach((s,i)=>{
-    const li=el("li");
-    li.append(el("div","bar"));
-    li.append(el("span","stext",`<span class="snum">${i+1}</span>${s.short}`));
-    stepperList.append(li);
-  });
-
-  function gateAnswered(key){ return !!document.querySelector(`input[name="g-${key}"]:checked`); }
-
-  function updateNextState(){
-    const s=STEPS[current];
-    if(s.key==="result") return;
-    $("#next-btn").disabled = !gateAnswered(s.key);
-  }
-
-  function showStep(i){
-    current=Math.max(0, Math.min(STEPS.length-1, i));
-    STEPS.forEach((s,idx)=>{
-      $("#step-"+s.key).hidden = idx!==current;
-      stepperList.children[idx].className = idx<current ? "done" : idx===current ? "current" : "";
-    });
-    const last = STEPS[current].key==="result";
-    $("#nav-step-lab").textContent=`Step ${current+1} / ${STEPS.length}`;
-    $("#back-btn").disabled = current===0;
-    $("#next-btn").hidden = last;
-    $("#restart-btn").hidden = !last;
-    $("#next-btn").textContent = current===STEPS.length-2 ? "See summary" : "Next";
-    if(last) renderResult();
-    updateNextState();
-    window.scrollTo({top:0, behavior:"smooth"});
-  }
-
-  $("#next-btn").addEventListener("click", ()=>showStep(current+1));
-  $("#back-btn").addEventListener("click", ()=>showStep(current-1));
-  $("#restart-btn").addEventListener("click", ()=>{
-    document.querySelectorAll('#step-scorad input, #step-vas input, #step-act input, #step-dms input')
-      .forEach(inp=>{ if(inp.type==="radio"||inp.type==="checkbox") inp.checked=false; });
-    $("#vas-slider").value=0; $("#vas-num").value="0.0";
-    Object.keys(active).forEach(k=>{ active[k]=false; $("#inst-"+k).hidden=true; });
-    refreshSummary();
-    showStep(0);
-  });
 
   /* ---------- gates ---------- */
   document.querySelectorAll('.seg[data-gate] input').forEach(inp=>{
@@ -758,7 +606,6 @@
       active[key]=on;
       $("#inst-"+key).hidden=!on;
       refreshSummary();
-      updateNextState();
       if(on) $("#inst-"+key).scrollIntoView({behavior:"smooth", block:"nearest"});
     });
   });
@@ -769,6 +616,16 @@
   });
   document.addEventListener("change", e=>{
     if(e.target.matches("[data-scorad],[data-act],[data-dms]")) refreshSummary();
+  });
+
+  $("#review-btn").addEventListener("click", ()=>{
+    const payload={};
+    if(active.scorad) payload.SCORAD=scoreSCORAD().value;
+    if(active.vas) payload.VAS=scoreVAS().value;
+    if(active.act) payload.ACT=scoreACT().value;
+    if(active.dms) payload.dMS=scoreDMS().value;
+    alert("Computed scores (preview only — no data submitted):\n\n"+
+      (Object.keys(payload).length? JSON.stringify(payload,null,2) : "No assessments selected."));
   });
 
   /* ---------- two-way slider <-> number binding ---------- */
@@ -799,7 +656,6 @@
   linkSlider("vas-slider","vas-num",1);
 
   refreshSummary();
-  showStep(0);
 })();
 </script>
 </body>
