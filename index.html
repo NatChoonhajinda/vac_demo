@@ -244,6 +244,26 @@
   .btn.ghost:hover:not(:disabled){background:var(--panel); border-color:var(--teal)}
   .btn[hidden]{display:none}
 
+  .nav-hint{
+    flex:1 1 100%; order:-1; font-size:12.5px; color:var(--warn-fg);
+    background:var(--warn-bg); border-radius:8px; padding:7px 11px;
+  }
+  .nav-hint[hidden]{display:none}
+
+  /* ---- Missing-answer highlight ---- */
+  .irow.missing, .qgroup.missing{
+    box-shadow:inset 3px 0 0 var(--amber);
+    border-radius:6px; padding-left:10px;
+  }
+
+  /* ---- Total row on review ---- */
+  .result-row.total{
+    margin-top:6px; border-top:2px solid var(--border-strong); border-bottom:none;
+    padding-top:16px;
+  }
+  .result-row.total .rname{font-family:"Spectral",serif; font-size:18px}
+  .result-row.total .rval{font-size:26px; color:var(--teal)}
+
   @media (max-width:560px){
     h1.title{font-size:27px}
     .gate-q{font-size:20px}
@@ -438,6 +458,7 @@
       </div>
       <div id="result-rows"></div>
       <p class="note" id="result-note">Use Back to revisit any step; every answer is kept.</p>
+      <p class="note">The total is a simple sum of the instruments that were scored — it is not a validated composite index. Note that ACT is reverse-scored (a higher ACT means better control), so a higher total does not uniformly mean worse disease.</p>
     </div>
   </section>
 
@@ -447,6 +468,7 @@
 <div class="summary">
   <div class="summary-inner">
     <span class="summary-lab" id="nav-step-lab">Step 1 / 5</span>
+    <div class="nav-hint" id="nav-hint" hidden></div>
     <div id="summary-pills" style="display:flex; gap:8px; flex-wrap:wrap"></div>
     <div class="nav-actions">
       <button class="btn ghost" id="back-btn" type="button">Back</button>
@@ -514,6 +536,7 @@
   const $ = (s,r=document)=>r.querySelector(s);
   const el=(t,c,h)=>{const n=document.createElement(t); if(c)n.className=c; if(h!=null)n.innerHTML=h; return n;};
   const active = { scorad:false, vas:false, act:false, dms:false };
+  let vasTouched = false;
 
   /* ---------- generic radio row builder ---------- */
   function buildRow(wrap, group, key, label, values, caps, badge, dense){
@@ -630,9 +653,14 @@
   }
 
   function scoreVAS(){
+    const chip=$("#vas-chip");
+    if(!vasTouched){
+      $("#vas-score").textContent="—";
+      band(chip,"","Not answered");
+      return {label:"VAS", value:"—", max:"10", cls:"", note:"no value set", complete:false};
+    }
     const v=+$("#vas-slider").value;
     $("#vas-score").textContent=v.toFixed(1);
-    const chip=$("#vas-chip");
     const cls = v<=3?"good":v<=7?"warn":"bad";
     const txt = v<=3?"Mild":v<=7?"Moderate":"Severe";
     band(chip,cls,txt);
@@ -680,6 +708,7 @@
       pills.append(el("span","pill "+(r.cls||""), `<span class="dot"></span>${r.label} <b>${r.value}</b>`));
     });
     if(!$("#step-result").hidden) renderResult();
+    updateNextState();
   }
 
   /* ---------- review page ---------- */
@@ -699,6 +728,19 @@
       row.append(el("span","chip "+(r.cls||""), r.complete?r.note:"Incomplete"));
       wrap.append(row);
     });
+    // combined total across every instrument the patient screened into
+    const done=rs.filter(r=>r.complete);
+    if(done.length){
+      const sum=done.reduce((a,r)=>a+parseFloat(r.value),0);
+      const max=done.reduce((a,r)=>a+parseFloat(r.max),0);
+      const pct=Math.round(sum/max*100);
+      const row=el("div","result-row total");
+      row.append(el("div","rname",`Total score<small>${done.map(r=>r.label).join(" + ")} · ${pct}% of the combined maximum</small>`));
+      row.append(el("span","rval",sum.toFixed(1)));
+      row.append(el("span","rmax",`/ ${max.toFixed(1)}`));
+      wrap.append(row);
+    }
+
     const incomplete=rs.filter(r=>!r.complete);
     $("#result-note").textContent = incomplete.length
       ? `${incomplete.map(r=>r.label).join(" and ")} ${incomplete.length>1?"are":"is"} not fully answered — go Back to finish, or leave as is.`
@@ -716,10 +758,73 @@
 
   function gateAnswered(key){ return !!document.querySelector(`input[name="g-${key}"]:checked`); }
 
+  /* every question on the current step must be answered before Next unlocks */
+  function stepStatus(key){
+    if(!gateAnswered(key)) return {ok:false, msg:"Answer the screening question to continue."};
+    if(!active[key]) return {ok:true, msg:""};
+
+    if(key==="scorad"){
+      let missing=0;
+      SCORAD_AREAS.forEach(([k])=>{ if(pick("A",k)===null) missing++; });
+      SCORAD_SIGNS.forEach(([k])=>{ if(pick("B",k)===null) missing++; });
+      SCORAD_SUBJ.forEach(([k])=>{ if(pick("C",k)===null) missing++; });
+      return missing
+        ? {ok:false, msg:`SCORAD is incomplete — ${missing} of 16 item${missing>1?"s":""} still unanswered.`}
+        : {ok:true, msg:""};
+    }
+    if(key==="vas"){
+      return vasTouched
+        ? {ok:true, msg:""}
+        : {ok:false, msg:"Set the VAS value with the slider or the number field."};
+    }
+    if(key==="act"){
+      const missing=ACT_Q.filter(q=>!document.querySelector(`input[name="${q.id}"]:checked`)).length;
+      return missing
+        ? {ok:false, msg:`ACT is incomplete — ${missing} of 5 question${missing>1?"s":""} still unanswered.`}
+        : {ok:true, msg:""};
+    }
+    if(key==="dms"){
+      const any=document.querySelector('input[data-dms]:checked');
+      return any
+        ? {ok:true, msg:""}
+        : {ok:false, msg:"Select at least one medication class, or answer No to the screening question."};
+    }
+    return {ok:true, msg:""};
+  }
+
+  /* flags the questions that are still blank on the current step */
+  function markMissing(key){
+    document.querySelectorAll(".missing").forEach(n=>n.classList.remove("missing"));
+    if(!active[key]) return;
+    if(key==="scorad"){
+      [["A",SCORAD_AREAS],["B",SCORAD_SIGNS],["C",SCORAD_SUBJ]].forEach(([g,list])=>{
+        list.forEach(([k])=>{
+          if(pick(g,k)===null){
+            const row=document.querySelector(`input[name="sc-${g}-${k}"]`).closest(".irow");
+            if(row) row.classList.add("missing");
+          }
+        });
+      });
+    }
+    if(key==="act"){
+      ACT_Q.forEach(q=>{
+        if(!document.querySelector(`input[name="${q.id}"]:checked`)){
+          const g=document.getElementById(`${q.id}-1`).closest(".qgroup");
+          if(g) g.classList.add("missing");
+        }
+      });
+    }
+  }
+
   function updateNextState(){
     const s=STEPS[current];
-    if(s.key==="result") return;
-    $("#next-btn").disabled = !gateAnswered(s.key);
+    const hint=$("#nav-hint");
+    if(s.key==="result"){ hint.hidden=true; return; }
+    const st=stepStatus(s.key);
+    $("#next-btn").disabled = !st.ok;
+    hint.textContent=st.msg;
+    hint.hidden=st.ok;
+    markMissing(s.key);
   }
 
   function showStep(i){
@@ -744,7 +849,7 @@
   $("#restart-btn").addEventListener("click", ()=>{
     document.querySelectorAll('#step-scorad input, #step-vas input, #step-act input, #step-dms input')
       .forEach(inp=>{ if(inp.type==="radio"||inp.type==="checkbox") inp.checked=false; });
-    $("#vas-slider").value=0; $("#vas-num").value="0.0";
+    $("#vas-slider").value=0; $("#vas-num").value="0.0"; vasTouched=false;
     Object.keys(active).forEach(k=>{ active[k]=false; $("#inst-"+k).hidden=true; });
     refreshSummary();
     showStep(0);
@@ -796,6 +901,9 @@
       refreshSummary();
     });
   }
+  ["vas-slider","vas-num"].forEach(id=>{
+    document.getElementById(id).addEventListener("input", ()=>{ vasTouched=true; refreshSummary(); });
+  });
   linkSlider("vas-slider","vas-num",1);
 
   refreshSummary();
